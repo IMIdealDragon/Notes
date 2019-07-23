@@ -1,0 +1,93 @@
+<div id="mainContent">
+	<div class="forFlow">
+		<div id="navigator"><!--done-->
+<div id="topics">
+	<div class="post">
+		<h1 class="postTitle">
+			<a id="cb_post_title_url" class="postTitle2" href="https://www.cnblogs.com/fandingBlog/p/3918407.html">浅谈为什么只有指针能够完成多态及动态转型的一个误区</a>
+		</h1>
+		<div class="clear"></div>
+		<div class="postBody">
+			<div id="cnblogs_post_body" class="blogpost-body"><p>c++多态由一个函数地址数组Vtable和一个指向Vtable的指针vptr实现。</p>
+<p>&nbsp;</p>
+<p>具体来说，类拥有自己的vtable，类的vtable在编译时刻完成。</p>
+<p>每个对象有自己的vptr指针，该指针初始化时指向对象所实现的类的vtable。</p>
+<p>&nbsp;</p>
+<p>关于向上转型的误区：</p>
+<p>　　通常对于向上转型的理解是这样的，当子类对象向上转型（允许隐式）成父类对象时，实际上只是将子类对象暂时看做父类对象，内部的数据并未改变。</p>
+                <p>　　对于没有虚函数的对象，这句话是正确的，但是，当引入虚函数后，这样的理解是有问题的，<b>实际上，向上转型的过程中，vptr指针的指向随着转型改变，</b>这一过程是upcast机制定义好的，也就是说，在任何时刻需要将子类看成父类时，vptr就动态的改变指向，Vprt指针总是指向对象的动态类型。</p>
+<p>&nbsp;</p>
+<p>推广之，任何的类型转化都导致vptr指向的改变，指向所转型的类的vtable，如果对应类没有vtable，则动态删除vptr。</p>
+<p>&nbsp;</p>
+<p>下面解释为什么只有指针和引用才具有多态性，测试如下：
+
+
+```cpp
+#include <iostream>
+using namespace std;
+
+class A{
+    virtual void func(){
+        cout<<"A's func is called"<<endl;
+    }
+};
+
+class B:public A{
+    virtual void func(){
+        cout<<"B's func is called"<<endl;
+    }
+};
+
+int main(){
+    A a;
+    B b;
+    cout<<"Vtable address of A is"<<*(void**)&a<<endl;
+    cout<<"Vtable address of B is"<<*(void**)&b<<endl;
+    A tmp=b;
+    cout<<"after upcast and copy:  "<<*(void**)&tmp<<endl;
+    A* p=&b;
+    cout<<"after upcast and reference:  "<<*(void**)&(*p)<<endl;
+}
+```
+
+
+
+<div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="//common.cnblogs.com/images/copycode.gif" alt="复制代码"></a></span></div></div>
+<p>测试结果如下：</p>
+<p class="p1"><strong>Vtable address of A is0x1000020e0</strong></p>
+<p class="p1"><strong>Vtable address of B is0x100002110</strong></p>
+<p class="p1"><strong>after upcast and copy:&nbsp; 0x1000020e0</strong></p>
+<p class="p1"><strong>after upcast and reference:&nbsp; 0x100002110</strong></p>
+<p>可见，确实只有指针才实现了多态。</p>
+<p>&nbsp;</p>
+<p>原因如下：</p>
+<pre><span>A tmp=<span>b;</span></span></pre>
+<p>当向父类引用拷贝一个子类对象时，这时实际发生的是，<b>子类对象先向上转型成父类对象，然后在进行赋值运算，</b>由于未定义=的运算符重载，所以发生的一定是bitwise copy，因此，tmp和b的vptr指向不一致，一定是b在发生隐式的向上转型时发生了改变。也就是说，b先发生隐式转换，此时的vptr也会从原来的指向子类vptr变成父类的vptr，然后直接按位复制了。而且通过对象调用，属于静态绑定，不通过虚函数表</p>
+<p>&nbsp;</p>
+<pre><span>A* p=&amp;<span>b;<br></span></span></pre>
+<p>同样，该过程包含一个向上转型和一个拷贝赋值，不同的是，向上转型和拷贝都是地址，首先，b的地址（B*）向上转型成(A*)类，然后将该地址的副本交给p，与值拷贝不同的是，A*和B*根本就没有vptr，也就不存在vptr指向改变的问题了。</p>
+<p>通过这种方式，我们使用一个父类的引用，但vptr并未改变，依旧指向了对象的动态类型，多态也得以实现。</p>
+<p>&nbsp;</p>
+<p>ps，在函数传参过程中的多态也是一样的。</p>
+<p>对于这样一个函数</p>
+<p>void fun(A a);　　将B b传入时，首先发生了b的向上转型，然后发生了值拷贝，vptr发生了改变，多态失败。</p>
+<p>void fun(A* a)　　将B* b传入时，发生b的向上转型和拷贝，但是地址变量的转型和拷贝不改变vptr的指向，vptr指向得以保留，多态成功。</p></div><div id="MySignature"></div>
+<div class="clear"></div>
+<div id="blog_post_info_block">
+<div id="BlogPostCategory"></div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
