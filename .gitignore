@@ -1,0 +1,11 @@
+cmake-build-debug/
+.idea/
+*.diff
+*.patch
+*.vscode
+*.vs
+tags
+build/
+si/
+out/
+*.pdf
