@@ -1,0 +1,74 @@
+# 回调机制
+
+在使用function之前，我们写网络库的时候，往往是采用虚函数的形式来完成不同类型服务器的不同handle。但是有了function以后，我们可以避免使用继承的模式，使得类与类之间解耦。
+
+继承的方式为，处理回调函数的原型是父类的指针，在使用的时候，我们需要new一个子类对象，得到一个指针，子类指针隐式转换为父类指针，传入处理回调的函数，这样根据C++的多态机制，就会找到子类中定义的回调函数。
+
+代码可以举例为：
+
+```cpp
+class BaseServer {
+public:
+    virtual void readhandle();
+    virtual void writehandle();
+};
+
+//子类服务器
+class ServerOne {
+public:
+    virtual void readhandle();
+    virtual void writehandle();
+};
+class ServerTwo {
+public:
+    virtual void readhandle();
+    virtual void writehandle();
+};
+
+//具体使用
+void readresponse(BaseServer* p)
+{
+    p->readhandle();
+}
+int main()
+{
+    ServerOne *p1 = new ServerOne;
+    ServerTwo *p2 = new ServerTwo;
+    
+    //...某个位置...读事件响应
+    readresponse(p1);//响应服务器1的回调函数
+    readresponse(p2);//响应服务器2的回调函数
+    return 0;
+}
+```
+
+现在用function/bind改写这个回调结构,以避免使用虚函数与继承。
+
+```cpp
+class BaseServer {
+public:
+    typedef std::function<void ()> callback;
+    callback readhandle();
+    callback writehandle();
+};
+class ServerOne {
+public:
+    void readhandle();
+    void writehandle();
+};
+void readresponse(BaseServer& p)
+{
+    p->readhandle();
+}
+int main()
+{
+    BaseServer server;
+    ServerOne serverson;
+    server.readhandle = bind(&ServerOne::readhandle,&serverson);
+    
+    //...
+    readresponse(server);
+    return 0;
+}
+```
+
