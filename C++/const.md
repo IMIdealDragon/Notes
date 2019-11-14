@@ -107,6 +107,8 @@ class complex
 
 在一个类中，成员函数包括**改变对象**（如change_real）和**不改变对象**（如real() 和 imag()）的，而如果程序中，对象是被定义为const的，那么非const的成员函数，将不能被调用，此时如果调用，编译器就会报错。
 
+原因：const对象的this指针是const T*，而非const成员对象的this指针是T *，const T *不能赋值给T *。
+
 ```cpp
 const complex n1(1,2);
 n1.real();//正确
